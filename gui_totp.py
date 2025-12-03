@@ -1,29 +1,41 @@
 # gui_totp.py
 
-
+# 导入 Tkinter GUI 库
 import tkinter as tk
 from tkinter import messagebox
 
-# 导入 TOTP 验证函数
+# 导入 TOTP 验证函数（基于 pyotp）
 from totp_manager import verify_totp
 
-# 导入用户管理函数
+# 导入用户管理函数（用于恢复码验证与失败次数控制）
 from user_manager import (
-    verify_recovery_code,
-    increment_failed_attempts,
-    get_remaining_attempts,
-    lock_user
+    verify_recovery_code,         # 验证恢复码是否正确
+    increment_failed_attempts,    # 增加失败次数
+    get_remaining_attempts,       # 获取剩余尝试次数
+    lock_user                     # 锁定用户账户
 )
 
 class TOTPViewMixin:
     """
-    TOTP 验证界面模块，用于第二因子验证（基于 TOTP 或恢复码）。
+    TOTP 验证界面模块，供主 GUI 类继承使用。
+    用于第二因子验证（基于 TOTP 或恢复码）。
     """
+
+    def __init__(self):
+        """
+        初始化 TOTP Mixin 的默认属性（防止 IDE 报错或类型缺失）
+        实际这些属性会由主 GUI 类设置。
+        """
+        self.label_font_mid = None     # 中等字体（标签）
+        self.entry_font = None         # 输入框字体
+        self.root = None               # 主窗口
+        self.username = None           # 当前登录用户名
+
     def init_totp_verification(self):
         """
         构建 TOTP 验证界面，供用户输入 TOTP 或恢复码。
         """
-        self.clear_window()
+        self.clear_window()  # 清空旧界面控件
 
         # 页面标题
         tk.Label(
@@ -64,5 +76,5 @@ class TOTPViewMixin:
             self.root,
             text="确认",
             command=verify_totp_code,
-            **self.button_style
+            **self.button_style  # 使用统一按钮样式
         ).pack(pady=10)

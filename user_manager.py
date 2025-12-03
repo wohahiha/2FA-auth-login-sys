@@ -1,20 +1,27 @@
 # user_manager.py
 
-import time
-import hashlib
-import secrets
+import time           # 用于处理锁定时间戳
+import hashlib        # 用于密码哈希处理
+import secrets        # 用于生成安全随机恢复码
 
 # 导入数据读写模块
 from data_store import load_users, save_users
 
-# 导入对称加密器
+# 导入对称加密器（用于加密 TOTP 密钥）
 from crypto_utils import fernet
 
-# 导入配最大失败次数、锁定时长
+# 导入配置项（最大失败次数、锁定时长）
 from config import MAX_FAILED_ATTEMPTS, LOCK_DURATION
 
 
 def hash_password(password):
+    """
+    使用 SHA256 对密码进行哈希处理（不可逆）。
+    参数:
+        password (str): 用户输入的明文密码
+    返回:
+        str: 哈希后的密码字符串
+    """
     return hashlib.sha256(password.encode()).hexdigest()
 
 
@@ -37,26 +44,37 @@ def add_user(username, secret, password, email=None, phone=None):
 
     users[username] = {
         "secret": fernet.encrypt(secret.encode()).decode(),  # 加密 TOTP 密钥
-        "password": hash_password(password),
+        "password": hash_password(password),                 # 哈希密码
         "email": email,
         "phone": phone,
-        "recovery_codes": generate_recovery_codes(),
-        "failed_attempts": 0,
-        "locked_until": 0,
+        "recovery_codes": generate_recovery_codes(),         # 生成恢复码
+        "failed_attempts": 0,                                # 登录失败次数
+        "locked_until": 0,                                   # 账户锁定截止时间戳
         "last_verified_time": 0,                             # 上次验证时间（保留字段）
-        "verification_codes": {}
+        "verification_codes": {}                             # 存储验证码（短信/邮箱）
     }
 
     save_users(users)
 
 
 def get_user(username):
+    """
+    获取指定用户名的用户信息。
+    参数:
+        username (str)
+    返回:
+        dict or None: 用户数据字典或 None
+    """
     return load_users().get(username)
 
 
 def get_remaining_attempts(username):
     """
     获取用户剩余的登录尝试次数。
+    参数:
+        username (str)
+    返回:
+        int: 剩余尝试次数
     """
     users = load_users()
     if username in users:
@@ -65,10 +83,22 @@ def get_remaining_attempts(username):
 
 
 def is_user_locked(user):
+    """
+    判断用户是否处于锁定状态。
+    参数:
+        user (dict): 用户数据
+    返回:
+        bool: 是否锁定
+    """
     return time.time() < user.get("locked_until", 0)
 
 
 def lock_user(username):
+    """
+    将用户账户锁定一段时间（配置中设定）。
+    参数:
+        username (str)
+    """
     users = load_users()
     if username in users:
         users[username]["locked_until"] = time.time() + LOCK_DURATION
@@ -77,7 +107,9 @@ def lock_user(username):
 
 def reset_failed_attempts(username):
     """
-    重置用户的失败尝试次数。
+    重置用户的失败尝试次数（成功登录后调用）。
+    参数:
+        username (str)
     """
     users = load_users()
     if username in users:
@@ -87,7 +119,9 @@ def reset_failed_attempts(username):
 
 def increment_failed_attempts(username):
     """
-    增加用户的失败尝试次数。
+    增加用户的失败尝试次数（登录失败后调用）。
+    参数:
+        username (str)
     """
     users = load_users()
     if username in users:
@@ -96,21 +130,44 @@ def increment_failed_attempts(username):
 
 
 def verify_password(user, input_password):
+    """
+    验证用户输入的密码是否正确。
+    参数:
+        user (dict): 用户数据
+        input_password (str): 用户输入的明文密码
+    返回:
+        bool: 是否匹配
+    """
     return hash_password(input_password) == user.get("password")
 
 
 def generate_recovery_codes(n=5):
+    """
+    生成指定数量的恢复码（每个为 8 位十六进制字符串）。
+    参数:
+        n (int): 恢复码数量
+    返回:
+        list[str]: 恢复码列表
+    """
     return [secrets.token_hex(4) for _ in range(n)]
 
 
 def verify_recovery_code(username, code):
+    """
+    验证恢复码是否正确，并在验证成功后移除该码。
+    参数:
+        username (str)
+        code (str): 用户输入的恢复码
+    返回:
+        bool: 是否验证成功
+    """
     users = load_users()
     user = users.get(username)
     if not user:
         return False
 
     if code in user.get("recovery_codes", []):
-        user["recovery_codes"].remove(code)  # 恢复码只能一次性使用
+        user["recovery_codes"].remove(code)  # 一次性使用
         save_users(users)
         return True
 

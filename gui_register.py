@@ -1,6 +1,6 @@
 # gui_register.py
 
-
+# 导入 Tkinter 库用于构建图形界面
 import tkinter as tk
 from tkinter import messagebox
 
@@ -16,14 +16,15 @@ from verification_manager import send_code, verify_code as verify_input_code
 
 class RegisterViewMixin:
     """
-    注册界面模块，包含注册页面、验证码验证、注册完成逻辑。
+    注册界面模块，供主 GUI 类继承使用。
+    包含注册页面、验证码验证、注册完成逻辑。
     """
 
     def init_register(self):
         """
         构建注册页面 UI，包含用户名、密码、手机号、邮箱等输入项。
         """
-        self.clear_window()
+        self.clear_window()  # 清空旧界面
         self.pending_user = {}  # 用于暂存注册数据
 
         # 页面标题
@@ -91,12 +92,13 @@ class RegisterViewMixin:
             self.pending_user = {
                 "username": username,
                 "password": pw1,
-                "secret": generate_secret(),
+                "secret": generate_secret(),  # 生成 TOTP 密钥
                 "phone": phone if phone else None,
                 "email": email if email else None
             }
 
-            # 手机号验证
+            # 优先验证手机号
+            # 实际无法通过手机号验证并注册：主要发不出短信（twilio 会被拦截，阿里云不给个人发）
             if phone:
                 try:
                     result = send_code(phone, "sms", is_registration=True)
@@ -108,7 +110,7 @@ class RegisterViewMixin:
                     messagebox.showerror("错误", f"短信发送失败：{e}")
                     return
 
-            # 邮箱验证
+            # 如果没有手机号但填写了邮箱
             if email:
                 try:
                     result = send_code(email, "email", is_registration=True)
@@ -185,7 +187,7 @@ class RegisterViewMixin:
         注册完成逻辑：
         - 保存用户信息
         - 显示二维码
-        - 显示恢复码
+        - 显示恢复码（可复制）
         """
         try:
             add_user(
