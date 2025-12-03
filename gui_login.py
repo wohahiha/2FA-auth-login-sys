@@ -1,39 +1,33 @@
 # gui_login.py
 
-# 导入 Tkinter GUI 库
 import tkinter as tk
 from tkinter import messagebox
 
 # 导入用户管理相关函数
 from user_manager import (
-    get_user,                      # 获取用户信息
-    verify_recovery_code,         # 验证恢复码
-    get_remaining_attempts,       # 获取剩余尝试次数
-    is_user_locked,               # 判断用户是否被锁定
-    lock_user,                    # 锁定用户账户
-    reset_failed_attempts,        # 重置失败尝试次数
-    increment_failed_attempts     # 增加失败尝试次数
+    get_user,
+    verify_recovery_code,
+    get_remaining_attempts,
+    is_user_locked,
+    lock_user,
+    reset_failed_attempts,
+    increment_failed_attempts
 )
 
 # 导入验证码逻辑模块
 from verification_manager import (
-    send_code,                    # 发送验证码（短信/邮箱）
-    verify_first_factor,          # 验证第一因子（密码/验证码）
-    verify_code as verify_input_code  # 验证验证码是否正确
+    send_code,
+    verify_first_factor,
+    verify_code as verify_input_code
 )
 
-
+# 登录界面模块（含第一因素认证）
 class LoginViewMixin:
-    """
-    登录界面模块，供主 GUI 类继承使用
-    含第一因素认证（基于密码或验证码）
-    """
-
     def init_login(self):
         """
         构建登录界面，包括用户名、方式选择、验证码输入、按钮等
         """
-        self.clear_window()  # 清空旧界面控件
+        self.clear_window()
 
         # 页面标题
         tk.Label(self.root, text="登录", font=self.label_font_big).pack(pady=20, padx=10)

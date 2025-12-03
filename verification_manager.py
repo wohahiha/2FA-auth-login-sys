@@ -1,22 +1,20 @@
 # verification_manager.py
 
-import secrets  # 用于生成安全随机验证码
-import time  # 用于生成和比较时间戳
-from email.header import Header  # 邮件标题支持中文
-from config import VERIFICATION_CODE_EXPIRY  # 验证码有效期配置
-from data_store import load_users, save_users  # 用户数据读写
-from user_manager import get_user, verify_password  # 用户验证逻辑
-from config import EMAIL_SENDER, EMAIL_PASSWORD, TWILIO_SID, TWILIO_TOKEN, TWILIO_PHONE  # 配置项
-from email.mime.text import MIMEText  # 邮件正文构建
-import smtplib  # 邮件发送库
-from twilio.rest import Client  # Twilio 短信发送库
+import secrets
+import time
+from email.header import Header
+from config import VERIFICATION_CODE_EXPIRY
+from data_store import load_users, save_users
+from user_manager import get_user, verify_password
+from config import EMAIL_SENDER, EMAIL_PASSWORD, TWILIO_SID, TWILIO_TOKEN, TWILIO_PHONE
+from email.mime.text import MIMEText
+import smtplib
+from twilio.rest import Client
 
 
 def generate_code():
     """
     生成 6 位数字验证码（100000 ~ 999999）。
-    返回:
-        str: 验证码字符串
     """
     return str(secrets.randbelow(900000) + 100000)
 
@@ -24,14 +22,6 @@ def generate_code():
 def send_code(contact, method, is_registration=False):
     """
     发送验证码并根据阶段决定是否写入用户数据。
-
-    参数:
-        contact (str): 手机号或邮箱地址
-        method (str): 'sms' 或 'email'
-        is_registration (bool): 是否为注册阶段
-
-    返回:
-        dict 或 bool: 注册阶段返回验证码对象，登录阶段返回 True/False
     """
     code = generate_code()
     timestamp = time.time()
@@ -73,13 +63,6 @@ def send_code(contact, method, is_registration=False):
 def verify_code(input_code, stored_code_obj):
     """
     验证用户输入的验证码是否正确且未过期。
-
-    参数:
-        input_code (str): 用户输入的验证码
-        stored_code_obj (dict): 包含 code 和 timestamp 的对象
-
-    返回:
-        bool: 是否验证成功
     """
     if not stored_code_obj:
         print("验证码对象不存在")
@@ -105,14 +88,6 @@ def verify_code(input_code, stored_code_obj):
 def verify_first_factor(username, method, input_value):
     """
     验证第一因子（密码、短信验证码、邮箱验证码）。
-
-    参数:
-        username (str)
-        method (str): 'password'、'sms'、'email'
-        input_value (str): 用户输入的凭证
-
-    返回:
-        bool: 是否验证成功
     """
     user = get_user(username)
     if not user:
@@ -128,10 +103,6 @@ def verify_first_factor(username, method, input_value):
 def send_email_code(to_email, code):
     """
     发送邮件验证码（使用 QQ 邮箱 SMTP）。
-
-    参数:
-        to_email (str): 收件人邮箱
-        code (str): 验证码
     """
     # 构建邮件正文（纯文本）
     msg = MIMEText(f'您的 2FA 登录验证码：{code}', 'plain', 'utf-8')
@@ -153,14 +124,13 @@ def send_email_code(to_email, code):
             print("[Email] 虽然报错，但大概率已成功发送")
         else:
             print(f"[Email] 发送失败：{e}")
-            raise  # 抛出异常，让 GUI 层捕获
+            raise
 
 
 # 可替换为 alisms.py 中的 send_sms_code（阿里云）
-# from alisms import send_sms_code
 def send_sms_code(to_phone, code):
     """
-    使用 Twilio 发送短信验证码。（实际上短信会被拦截）
+    使用 Twilio 发送短信验证码。
     """
     try:
         client = Client(TWILIO_SID, TWILIO_TOKEN)
@@ -172,4 +142,4 @@ def send_sms_code(to_phone, code):
         print(f"[Twilio] 短信已发送：{message.sid}")
     except Exception as e:
         print(f"[Twilio] 发送失败：{e}")
-        raise  # 抛出异常，让 GUI 层捕获
+        raise

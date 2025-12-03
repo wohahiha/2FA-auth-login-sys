@@ -1,8 +1,0 @@
-
-pyotp
-qrcode
-cryptography
-python-dotenv
-twilio
-aliyun-python-sdk-core
-

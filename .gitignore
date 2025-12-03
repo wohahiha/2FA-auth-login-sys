@@ -22,7 +22,6 @@ wheels/
 MANIFEST
 
 # Virtual Environment
-2FAVenv/
 venv/
 ENV/
 env/
